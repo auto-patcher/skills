@@ -15,12 +15,12 @@
     let
       # Package the skill command files for installation.
       # Downstream flakes (e.g. a dotfiles flake using free-code.lib.mkClaude) can
-      # add this package and symlink $out/share/claude/commands/* into ~/.claude/commands/.
+      # add this package and symlink $out/share/claude/skills/* into ~/.claude/skills/.
       mkSkillsPackage =
         pkgs:
-        pkgs.runCommand "auto-patcher-skills" { src = ./.claude/commands; } ''
-          mkdir -p $out/share/claude/commands
-          cp -r $src/. $out/share/claude/commands/
+        pkgs.runCommand "auto-patcher-skills" { src = ./skills; } ''
+          mkdir -p $out/share/claude/skills
+          cp -r $src/. $out/share/claude/skills/
         '';
 
       # Package the autopatcher agent files (CLAUDE.md + PATCHER.md template).

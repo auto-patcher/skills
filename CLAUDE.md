@@ -50,10 +50,10 @@ Always use the GitHub MCP tools (`push_files`, `create_or_update_file`, `delete_
 
 ## Skills
 
-Skills in this repo live under `.claude/skills/<name>/SKILL.md`. Each skill directory may also contain supporting files (reference docs, examples, scripts). Skills are invoked as `/<name>` in Claude Code.
+Skills in this repo live under `skills/<name>/SKILL.md`. Each skill directory may also contain supporting files (reference docs, examples, scripts). Skills are invoked as `/<name>` in Claude Code.
 
 ```
-.claude/skills/
+skills/
 ├── patch-init/
 │   └── SKILL.md      # /patch-init <owner/repo>
 ├── patch-dissect/
@@ -64,7 +64,7 @@ Skills in this repo live under `.claude/skills/<name>/SKILL.md`. Each skill dire
     └── SKILL.md      # /patch-apply
 ```
 
-To add a new skill: create `.claude/skills/<skill-name>/SKILL.md`. The directory name becomes the slash command. Supporting files (context docs, examples, scripts) can live alongside `SKILL.md` in the same directory and will be bundled with it.
+To add a new skill: create `skills/<skill-name>/SKILL.md`. The directory name becomes the slash command. Supporting files (context docs, examples, scripts) can live alongside `SKILL.md` in the same directory and will be bundled with it.
 
 ## Principles
 
