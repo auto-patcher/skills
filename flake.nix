@@ -71,9 +71,22 @@
         };
 
         devShells.default = pkgs.mkShell {
+          packages = with pkgs; [
+            # secrets
+            sops
+            age
+            # container runtime
+            podman
+            # github + git
+            gh
+            git
+            # go toolchain (for go mod tidy, local builds)
+            go
+            gopls
+          ];
           shellHook = ''
-            echo "auto-patcher skills"
-            echo "skills: /patch-dissect  /patch-design  /patch-apply"
+            echo "auto-patcher dev shell"
+            echo "skills:     /patch-dissect  /patch-design  /patch-apply"
             echo "dispatcher: nix build .#dispatcher"
           '';
         };

@@ -1,9 +1,9 @@
 # Deploys the autopatcher dispatcher binary.
-# The dispatcher clones repos and invokes claude directly as a subprocess,
-# so this image needs both the compiled binary and claude-code installed.
+# The dispatcher clones repos and invokes claude directly as a subprocess.
+# Build with podman: podman build -t ghcr.io/auto-patcher/dispatcher:latest .
 #
-# Build: docker build -t ghcr.io/auto-patcher/dispatcher:latest .
-# (Assumes the dispatcher binary has been compiled and copied to the build context.)
+# Assumes the dispatcher binary has been compiled and is in the build context.
+# Build the binary first: nix build .#dispatcher && cp result/bin/dispatcher .
 
 FROM debian:bookworm-slim
 
