@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"os/exec"
 	"time"
 
+	"github.com/getsops/sops/v3/decrypt"
 	"gopkg.in/yaml.v3"
 )
 
@@ -44,15 +44,15 @@ func Load(path string) (*Config, error) {
 	return cfg, nil
 }
 
-// readConfig attempts to decrypt path with sops. If sops is unavailable or
-// the file is not a sops-encrypted file, it falls back to reading plaintext.
+// readConfig attempts to decrypt path with the sops library. If the file has
+// no sops metadata, it falls back to reading plaintext.
 func readConfig(path string) ([]byte, error) {
-	out, err := exec.Command("sops", "--decrypt", path).Output()
+	out, err := decrypt.File(path, "yaml")
 	if err == nil {
 		slog.Debug("loaded config via sops", "path", path)
 		return out, nil
 	}
-	slog.Debug("sops unavailable or file not encrypted, reading plaintext", "path", path)
+	slog.Debug("file not sops-encrypted, reading plaintext", "path", path)
 	return os.ReadFile(path)
 }
 

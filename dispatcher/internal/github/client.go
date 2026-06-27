@@ -102,9 +102,7 @@ func (c *Client) RepoInfo(ctx context.Context, repo string) (state.RepoInfo, err
 	releases, _, _ := c.gh.Repositories.ListReleases(ctx, owner, name, &gh.ListOptions{PerPage: 10})
 	for _, r := range releases {
 		if strings.HasSuffix(r.GetTagName(), "-patch") {
-			if pt := r.GetPublishedAt(); pt != nil {
-				info.LastPatchTime = pt.Time
-			}
+			info.LastPatchTime = r.GetPublishedAt().Time
 			break
 		}
 	}
