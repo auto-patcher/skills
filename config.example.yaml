@@ -1,21 +1,21 @@
+# Example non-secret configuration. Copy to config.yaml and edit.
+#
+# Secrets are NOT configured here. The auto-patcher binary reads its tokens
+# from the environment so they can come from GitHub secrets:
+#   GITHUB_TOKEN      — token with org-wide repo/issues access
+#   ANTHROPIC_API_KEY — key for the claude subprocess
+#
+# The org may also be overridden at runtime via the AUTOPATCHER_ORG env var.
+
 org: auto-patcher
 
-# Number of repos processed simultaneously.
-# Each worker runs a full Claude session — keep this low.
+# Repos processed simultaneously within a single run. Each is a full Claude
+# session, so keep this low.
 workers: 3
 
-# How often to re-scan the org for repos that need work.
-scan_interval: 6h
-
-# Minimum pause between a worker finishing one job and starting the next.
-worker_delay: 10m
+# Pause between consecutive jobs on the same worker.
+worker_delay: 0s
 
 # Repos in the org to skip.
 exclude:
   - skills
-
-github:
-  token: ""
-
-anthropic:
-  token: ""

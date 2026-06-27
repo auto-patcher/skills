@@ -15,12 +15,21 @@ import (
 )
 
 func main() {
-	configPath := flag.String("config", envOr("DISPATCHER_CONFIG", "config.yaml"), "path to config file")
+	configPath := flag.String("config", envOr("AUTOPATCHER_CONFIG", "config.yaml"), "path to config file")
 	flag.Parse()
 
 	cfg, err := config.Load(*configPath)
 	if err != nil {
 		slog.Error("failed to load config", "err", err)
+		os.Exit(1)
+	}
+
+	if cfg.GitHubToken() == "" {
+		slog.Error("missing GITHUB_TOKEN environment variable")
+		os.Exit(1)
+	}
+	if cfg.AnthropicKey() == "" {
+		slog.Error("missing ANTHROPIC_API_KEY environment variable")
 		os.Exit(1)
 	}
 
@@ -31,17 +40,18 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	slog.Info("dispatcher starting",
+	slog.Info("autopatcher run starting",
 		"org", cfg.Org,
 		"workers", cfg.Workers,
-		"scan_interval", cfg.ScanInterval,
 		"worker_delay", cfg.WorkerDelay,
 	)
 
-	if err := sched.Run(ctx); err != nil {
-		slog.Error("dispatcher exited", "err", err)
+	if err := sched.RunOnce(ctx); err != nil {
+		slog.Error("autopatcher run failed", "err", err)
 		os.Exit(1)
 	}
+
+	slog.Info("autopatcher run complete")
 }
 
 func envOr(key, fallback string) string {

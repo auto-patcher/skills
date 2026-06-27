@@ -1,5 +1,5 @@
 // Package skills embeds the autopatcher prompt templates.
-// Each SKILL.md is a Go text/template rendered by dispatcher/internal/prompts.
+// Each SKILL.md is a Go text/template rendered by internal/prompts.
 package skills
 
 import "embed"

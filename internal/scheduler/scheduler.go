@@ -13,9 +13,11 @@ import (
 	"github.com/auto-patcher/skills/internal/state"
 )
 
-// Scheduler drives the worker pool. A background loop scans the org on a
-// fixed interval and enqueues actionable repos in staleness order.
-// Workers pace themselves with a configurable inter-job delay.
+// Scheduler drives the worker pool for a single patch run. Periodicity is
+// owned by the GitHub Actions cron schedule, not this process: each invocation
+// scans the org once, enqueues actionable repos in staleness order, drains the
+// queue through a bounded worker pool, and exits. Workers pace themselves with
+// a configurable inter-job delay.
 type Scheduler struct {
 	cfg    *config.Config
 	client *github.Client
@@ -33,8 +35,11 @@ func New(cfg *config.Config, client *github.Client, r *runner.Runner) *Scheduler
 	}
 }
 
-// Run starts workers and the scan loop. Blocks until ctx is cancelled.
-func (s *Scheduler) Run(ctx context.Context) error {
+// RunOnce performs a single scan-and-drain pass: it starts the worker pool,
+// scans the org once and enqueues every actionable repo, then closes the queue
+// so workers exit as soon as it is empty. It blocks until all work is done or
+// ctx is cancelled (e.g. the workflow job is cancelled or times out).
+func (s *Scheduler) RunOnce(ctx context.Context) error {
 	var wg sync.WaitGroup
 	for i := 0; i < s.cfg.Workers; i++ {
 		wg.Add(1)
@@ -45,19 +50,9 @@ func (s *Scheduler) Run(ctx context.Context) error {
 	}
 
 	s.scan(ctx)
-	ticker := time.NewTicker(s.cfg.ScanInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			close(s.queue)
-			wg.Wait()
-			return nil
-		case <-ticker.C:
-			s.scan(ctx)
-		}
-	}
+	close(s.queue)
+	wg.Wait()
+	return nil
 }
 
 func (s *Scheduler) scan(ctx context.Context) {

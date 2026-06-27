@@ -1,0 +1,50 @@
+name: auto-patch
+
+# Periodicity now lives here instead of in a long-running server: the binary
+# does a single scan-and-drain pass per invocation, and this schedule decides
+# how often that happens. Adjust the cron as needed.
+on:
+  schedule:
+    - cron: "0 */6 * * *" # every 6 hours
+  workflow_dispatch: {} # allow manual runs from the Actions tab
+
+# Prevent overlapping runs — a scan-and-drain pass can outlast the 6h interval.
+concurrency:
+  group: auto-patch
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    # A patch cycle runs full Claude sessions; give the job plenty of room.
+    timeout-minutes: 350
+    env:
+      # Secrets, formerly in the sops-encrypted config, now come from GitHub
+      # secrets. GITHUB_TOKEN must have org-wide repo + issues access (a PAT or
+      # GitHub App token), so we use a custom secret rather than the default
+      # workflow token, which is scoped to this repo only.
+      GITHUB_TOKEN: ${{ secrets.AUTOPATCHER_GITHUB_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install claude-code
+        # TODO: replace with the auto-patcher fork once published:
+        #   npm install -g https://github.com/auto-patcher/claude-code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Build
+        run: go build -o auto-patcher .
+
+      - name: Run patch cycle
+        run: ./auto-patcher -config config.yaml
