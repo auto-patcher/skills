@@ -26,6 +26,7 @@ For each version hop (`vA → vB`), reason through the diff at a feature level:
 - Identify discrete features, bug fixes, refactors, and breaking changes
 - Group related commits into named changes. If a feature is assembled from multiple commits or if one commit sets up something that a later commit builds on, treat these as a **story** — a parent feature with a sequence of sub-points
 - Note any changes that touch areas described in `PATCHER.md` (custom features, architectural differences). Flag these as potential conflicts
+- Classify each change as a `feature` or `bug` (bug fixes, regressions, security patches)
 
 Do not just summarize commit messages. Read the code. Understand what actually changed and why.
 
@@ -34,23 +35,24 @@ Do not just summarize commit messages. Read the code. Understand what actually c
 Collapse all version analyses into a single feature-level changelog:
 
 ```
-[feature name]
+[change name]
   upstream version: v1.4.0
-  type: standalone | story
+  type: feature | bug
+  standalone | story
   description: ...
   upstream commits: ...
   fork conflict: yes/no — reason if yes
 ```
 
-Order entries by: stories first (they often unblock standalone items), then standalone features, then fixes.
+Order entries by: stories first (they often unblock standalone items), then standalone features, then bug fixes.
 
 ## Step 5 — Create GitHub issues
 
 For each entry in the changelog, create one GitHub issue on the **fork** repository:
 
-**Title**: `[backport] <feature name> (upstream <version>)`
+**Title**: `[backport] <change name> (upstream <version>)`
 
-**Labels**: `backport`, `patch-dissect`
+**Labels**: `backport` + `feature` or `bug` (as appropriate)
 
 **Body**:
 ```

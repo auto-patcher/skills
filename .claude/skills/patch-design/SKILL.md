@@ -1,6 +1,14 @@
-Review all open backport issues and annotate each with a design plan that expresses the upstream change in this fork's style.
+Design the implementation for open issues on this fork. For each eligible issue, produce a design comment describing how to implement the request in this fork's style, then mark it `ready`.
 
-Run this after `/patch-dissect` and before `/patch-apply`.
+An issue is eligible if:
+- It is open
+- It was opened by a member of the `auto-patcher` org
+- It does not already have the `ready` label
+- It is not labeled `conflict`
+
+This applies to any issue type — `backport`, `feature`, `bug` — the design process is the same: understand the request, then figure out how this fork would express it.
+
+Run this after `/patch-dissect` for backport cycles, or at any time for original feature and bug issues.
 
 ---
 
@@ -12,63 +20,58 @@ Read `PATCHER.md`. Internalize:
 - Architectural patterns the fork uses
 - Style notes
 
-List all open issues in the fork repo labeled `backport` and `patch-dissect`. These are the units of work to design.
+List all open, eligible issues (see criteria above). Check issue authors against the `auto-patcher` org member list.
 
 ## Step 2 — Order by dependency
 
-Before designing, determine the dependency order:
 - Issues with no dependencies come first
-- If issue B says "Depends on #A", design A before B (B's design may depend on how A was implemented)
-- Stories: design the parent before the sub-issues
+- If issue B says "Depends on #A", design A before B
+- Story parent issues before their sub-issues
 
 ## Step 3 — Design each issue
 
-For each issue, in dependency order:
+For each eligible issue, in dependency order:
 
-1. **Read** the issue body: what does this upstream change do?
-2. **Fetch** the relevant upstream code (commits and files referenced in the issue)
-3. **Read** the corresponding area of the fork's codebase
-4. **Think**: if a developer who wrote this fork were implementing this feature from scratch — without looking at upstream — how would they do it?
+1. **Read** the issue body: what is being asked for?
+2. If the issue is a `backport`: fetch the relevant upstream code (commits and files referenced in the issue). If it is a `feature` or `bug`: read the description and any linked context carefully.
+3. **Read** the corresponding area of the fork's codebase.
+4. **Think**: how would a developer who wrote this fork implement this from scratch?
 
    Consider:
-   - Does the upstream abstraction fit the fork's existing abstractions, or should it be expressed differently?
-   - Are there naming patterns in the fork that should be followed?
-   - Does the fork already have partial infrastructure for this that should be extended rather than worked around?
-   - Can the upstream feature be implemented in a way that also benefits or extends the fork's custom features?
-   - Is the upstream change's scope right, or should it be split or merged with existing code?
+   - Does the proposed abstraction fit the fork's existing patterns, or should it be expressed differently?
+   - Are there naming conventions in the fork that apply?
+   - Does the fork already have partial infrastructure that should be extended rather than worked around?
+   - Can this be implemented in a way that also strengthens the fork's custom features?
+   - Is the scope right, or should it be split or merged with existing code?
 
 5. **Write a design comment** on the issue:
 
 ```
-## Design [patch-design]
+## Design
 
 ### Approach
-<how to implement this in the fork's style — not a port, a reimplementation in fork voice>
+<how to implement this in the fork's style>
 
 ### Files to touch
 - `path/to/file.ext` — reason
 - ...
 
 ### Risks
-<anything that could break existing fork behavior; call out any tension with PATCHER.md custom features>
+<anything that could break existing fork behavior; any tension with PATCHER.md custom features>
 
 ### Testing plan
-<how to verify this works: existing tests to run, new tests to write, manual checks>
+<existing tests to run, new tests to write, manual checks>
 
 ### Notes
-<anything else relevant — e.g. if the upstream change is poor quality and we should do it differently anyway>
+<anything else — e.g. if a backport's upstream implementation is poor and we should do better>
 ```
 
-6. **Add label** `patch-design` to the issue.
+6. **Add label** `ready` to the issue.
 
 ## Step 4 — Close no-ops
 
-If the fork already has equivalent functionality for an issue (e.g. it was independently implemented), close the issue with a comment explaining:
-- What existing code provides the equivalent behavior
-- Why no change is needed
+If the fork already has equivalent functionality (e.g. a backport of something already independently implemented), close the issue with a comment explaining what existing code covers it. Add label `no-op` before closing.
 
-Add label `no-op` before closing.
+## Step 5 — Flag conflicts
 
-## Step 5 — Flag blockers
-
-If designing an issue reveals that it cannot be safely implemented without first resolving a fork conflict noted in the issue body, add label `conflict` and post a comment describing the conflict clearly. Do not write a design comment — surface it for human review instead.
+If an issue cannot be safely implemented without resolving a conflict with a fork custom feature, add label `conflict` and post a comment describing the conflict clearly. Do not write a design comment. Surface it for human review.

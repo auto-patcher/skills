@@ -1,4 +1,4 @@
-Apply all designed backport patches in dependency order. You are the **super-agent** (autopatcher). Sub-agents implement individual issues. Your job is to supervise, maintain context across the full patch cycle, and ensure every applied change is correct and stylistically sound.
+Apply all `ready` issues in dependency order. You are the **super-agent** (autopatcher). Sub-agents implement individual issues. Your job is to supervise, maintain context across the full patch cycle, and ensure every applied change is correct and stylistically sound.
 
 Run this after `/patch-design`.
 
@@ -8,7 +8,7 @@ Run this after `/patch-design`.
 
 Read `PATCHER.md`.
 
-List all open issues in the fork repo labeled both `backport` and `patch-design`. These are ready to implement. Skip issues labeled `conflict` — they require human resolution.
+List all open issues in the fork repo labeled `ready`. Skip issues labeled `conflict` — they require human resolution.
 
 Sort by dependency order:
 - Issues with no `Depends on` come first
@@ -22,10 +22,10 @@ Work through the sorted list. For each issue:
 
 Spawn a sub-agent with the following context:
 
-- The full issue body (what the upstream feature does)
-- The design comment from `/patch-design` (how to implement it in fork style)
+- The full issue body (what is being implemented)
+- The design comment (how to implement it in fork style)
 - The relevant sections of `PATCHER.md` (custom features, architectural differences, style notes)
-- The instruction: **implement the feature as described in the design comment, not as a copy of the upstream code**. The sub-agent should write code as if it were a native member of this fork's codebase.
+- The instruction: **implement as described in the design comment, not as a copy of upstream code**. The sub-agent should write code as if it were a native member of this fork's codebase.
 
 Sub-agent task:
 1. Implement the changes described in the design comment
@@ -37,7 +37,7 @@ Sub-agent task:
 
 After the sub-agent reports back:
 
-- Read the diff. Ask: does this look like it belongs in this fork, or does it look like upstream code was pasted in?
+- Read the diff. Ask: does this look like it belongs in this fork, or does it look like it was pasted from somewhere else?
 - Verify tests pass (all of them, not just the new ones)
 - Check that no custom features from `PATCHER.md` were accidentally modified or broken
 - If the work needs changes: either request a revision from the sub-agent (for significant issues) or apply the fixes directly (for small style corrections)
@@ -49,26 +49,26 @@ After each issue is applied and closed, note it as complete before moving to the
 
 ## Step 3 — Finalize the patch cycle
 
-Once all issues are applied and closed:
+Once all `ready` issues are applied and closed:
 
 1. Run the **full test suite** one final time on the patch branch.
 2. If tests fail: do not proceed. Investigate and fix, then retry from step 1.
-3. If tests pass, open a pull request against `main` with a summary of all changes applied, grouped by feature. Include links to all closed issues.
+3. If tests pass, open a pull request against `main` with a summary of all changes applied, grouped by type (`backport`, `feature`, `bug`). Include links to all closed issues.
 4. Merge the pull request into `main`.
-5. Run the **integration test suite** against `main` after merge. Integration tests may differ from unit tests — run whatever the repo defines as its integration or end-to-end suite.
+5. Run the **integration test suite** against `main` after merge.
 6. If integration tests fail: do not release. Investigate on `main`, fix, and re-run integration tests before continuing.
 7. If integration tests pass:
-   - Update `PATCHER.md` on `main`: set `last_patched` to the new upstream version and append a row to the patch history table
-   - Create a **GitHub release** tagged `v<upstream_version>-patch` (use the highest upstream version covered by this cycle) targeting `main`. The release body should summarize the features backported in this cycle.
+   - If this cycle included any `backport` issues: update `PATCHER.md` on `main` — set `last_patched` to the highest upstream version covered and append a row to the patch history table
+   - Create a **GitHub release** tagged `v<upstream_version>-patch` (for backport cycles) or `v<fork_version>` (for pure feature/bug cycles) targeting `main`. The release body should summarize all changes by type.
 
 ## Principles
 
-**Style over verbatim.** The fork should gain the capability, not the upstream's implementation. If the sub-agent produces code that looks like it was copied, send it back.
+**Style over verbatim.** The fork should gain the capability in its own voice. If the sub-agent produces code that looks copied, send it back.
 
 **Test before closing.** No issue closes without passing tests.
 
-**Conflicts block the cycle.** If a sub-agent surfaces a conflict with a fork custom feature, do not work around it silently. Stop, document the conflict, and surface it for human review.
+**Conflicts block the cycle.** If a sub-agent surfaces a conflict with a fork custom feature, stop and surface it for human review.
 
-**Context is your job.** Sub-agents see one issue at a time. You see the whole cycle. Notice when issues affect each other, when assumptions made early in the cycle need revisiting, when the sum of changes is diverging from the fork's identity.
+**Context is your job.** Sub-agents see one issue at a time. You see the whole cycle. Notice cross-issue concerns, revisit earlier assumptions when needed, keep the sum of changes coherent.
 
-**Caution over speed.** There is no deadline. A patch cycle can span multiple sessions. Ship correct, stylistically integrated work — not fast work.
+**Caution over speed.** There is no deadline. Ship correct, stylistically integrated work — not fast work.
