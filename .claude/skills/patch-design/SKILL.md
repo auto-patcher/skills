@@ -15,10 +15,8 @@ Run this after `/patch-dissect` for backport cycles, or at any time for original
 ## Step 1 — Load context
 
 Read `PATCHER.md`. Internalize:
-- The fork's purpose and what makes it distinct
-- Custom features that must be preserved
-- Architectural patterns the fork uses
-- Style notes
+- The fork's purpose, character, architecture, and style
+- The Testing section — you will use this when writing testing plans
 
 List all open, eligible issues (see criteria above). Check issue authors against the `auto-patcher` org member list.
 
@@ -57,10 +55,12 @@ For each eligible issue, in dependency order:
 - ...
 
 ### Risks
-<anything that could break existing fork behavior; any tension with PATCHER.md custom features>
+<anything that could break existing fork behavior; any tension with PATCHER.md character or architecture>
 
 ### Testing plan
-<existing tests to run, new tests to write, manual checks>
+<cover all angles from PATCHER.md's Testing section that are relevant to this change:
+which unit tests to run or write, integration test scenarios, build verification,
+specific smoke test steps, and any subagent testing that makes sense for this feature>
 
 ### Notes
 <anything else — e.g. if a backport's upstream implementation is poor and we should do better>
@@ -74,4 +74,4 @@ If the fork already has equivalent functionality (e.g. a backport of something a
 
 ## Step 5 — Flag conflicts
 
-If an issue cannot be safely implemented without resolving a conflict with a fork custom feature, add label `conflict` and post a comment describing the conflict clearly. Do not write a design comment. Surface it for human review.
+If an issue cannot be safely implemented without resolving a conflict with the fork's character or architecture, add label `conflict` and post a comment describing the conflict clearly. Do not write a design comment. Surface it for human review.

@@ -38,7 +38,7 @@ Fetch from `auto-patcher/skills` and copy verbatim. This is the shared agent def
 
 ### `PATCHER.md`
 
-Create a filled-out instance with the repositories and baseline populated, and the identity sections left as prompts for the user:
+Create a filled-out instance with the repositories and baseline populated, and all other sections left as prompts for the user:
 
 ```markdown
 # Patcher
@@ -75,6 +75,28 @@ The upstream version tag last incorporated into this fork. The next `/patch-diss
 ## Style
 
 <!-- Naming conventions, idioms, and patterns specific to this fork. -->
+
+## Testing
+
+### Unit tests
+
+<!-- Command to run the unit test suite -->
+
+### Integration tests
+
+<!-- Command to run integration or end-to-end tests, and any required setup -->
+
+### Build
+
+<!-- How to build the project from source -->
+
+### Smoke tests
+
+<!-- Concrete manual checks after a build — specific commands and expected outputs -->
+
+### Subagent testing
+
+<!-- Any test scenarios that benefit from a subagent (e.g. acting as a client to test a server) -->
 ```
 
 ### `.claude/skills/`
@@ -138,4 +160,4 @@ Summarize what was done:
 - Initial `last_patched`: `<tag>`
 - Files added: `CLAUDE.md`, `PATCHER.md`, `.claude/skills/`, `flake.nix` (created or updated)
 
-Remind the user to fill in the **Purpose**, **Character**, **Architecture**, and **Style** sections of `PATCHER.md` before running `/patch-dissect`. The agent cannot make good judgements about what to preserve or how to express changes without this context.
+Remind the user to fill in all sections of `PATCHER.md` — especially **Testing** — before running `/patch-dissect`. The agent relies on the Testing section to know how to verify work at every stage of the patch cycle.

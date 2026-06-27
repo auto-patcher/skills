@@ -44,3 +44,45 @@ The upstream version tag last incorporated into this fork. The next `/patch-diss
 <!-- Naming conventions, idioms, patterns, and preferences specific to this fork.
      The agent uses this when deciding how to express an upstream feature in fork terms
      rather than copying the upstream implementation. -->
+
+## Testing
+
+<!-- How to verify that this fork is working correctly. The agent is expected to test
+     from multiple angles before closing any issue or cutting a release. Be specific —
+     include commands, expected outputs, and what "working" looks like for this fork. -->
+
+### Unit tests
+
+<!-- Command to run the unit test suite, e.g.:
+     go test ./...
+     bun test
+     pytest -->
+
+### Integration tests
+
+<!-- Command to run integration or end-to-end tests, if separate from unit tests.
+     Note any required setup (env vars, running services, test fixtures). -->
+
+### Build
+
+<!-- How to build the project from source, e.g.:
+     go build ./...
+     bun run build
+     nix build -->
+
+### Smoke tests
+
+<!-- What to do manually after a build to verify basic functionality.
+     Think: what are the first 3 things you'd try if you just installed this?
+     Include concrete commands or interactions, not just "check that it works".
+
+     Example:
+     - Run `./bin/tool --help` and verify the help text renders
+     - Run `./bin/tool <basic-command>` and verify expected output
+     - Try the feature most likely to break under a patch -->
+
+### Subagent testing
+
+<!-- If any test scenarios benefit from a subagent (e.g. testing a server by having
+     an agent act as a client, testing an AI tool by running it against a sample task),
+     describe how to set that up here. -->
