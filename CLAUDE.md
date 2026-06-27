@@ -41,6 +41,10 @@ For each issue, think through how the upstream feature should be expressed in th
 ### 3. `/patch-apply`
 Apply each patch using a sub-agent per issue, with you as supervising agent. Review everything. Test everything. Do not merge work that doesn't fit.
 
+## GitHub operations
+
+Always use the GitHub MCP tools (`push_files`, `create_or_update_file`, `delete_file`, etc.) for all repository operations — creating files, committing changes, managing issues, and opening PRs. Do not use `git` CLI commands. MCP tools are the default for autonomous work because they are atomic, auditable, and don't depend on local shell state or credentials.
+
 ## Skills
 
 Skills in this repo live under `.claude/skills/<name>/SKILL.md`. Each skill directory may also contain supporting files (reference docs, examples, scripts). Skills are invoked as `/<name>` in Claude Code.
