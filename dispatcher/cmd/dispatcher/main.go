@@ -8,10 +8,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/auto-patcher/dispatcher/internal/config"
-	"github.com/auto-patcher/dispatcher/internal/github"
-	"github.com/auto-patcher/dispatcher/internal/runner"
-	"github.com/auto-patcher/dispatcher/internal/scheduler"
+	"github.com/auto-patcher/skills/dispatcher/internal/config"
+	"github.com/auto-patcher/skills/dispatcher/internal/github"
+	"github.com/auto-patcher/skills/dispatcher/internal/runner"
+	"github.com/auto-patcher/skills/dispatcher/internal/scheduler"
 )
 
 func main() {
@@ -24,13 +24,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	r, err := runner.New(cfg)
-	if err != nil {
-		slog.Error("failed to initialize runner", "err", err)
-		os.Exit(1)
-	}
-
 	client := github.NewClient(cfg)
+	r := runner.New(cfg)
 	sched := scheduler.New(cfg, client, r)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

@@ -6,15 +6,13 @@ import "time"
 type State int
 
 const (
-	// Uninitialized: no PATCHER.md. Needs /patch-init and human setup before the
-	// dispatcher can manage this repo.
+	// Uninitialized: no PATCHER.md. Needs /patch-init and human setup.
 	Uninitialized State = iota
 	// InProgress: a dispatcher cycle is currently running (lock issue is open).
 	InProgress
 	// Blocked: all open issues require human intervention (conflict or human-review).
-	// The dispatcher will not enqueue until a human clears the labels.
 	Blocked
-	// UpToDate: no open issues and last_patched matches the latest upstream release.
+	// UpToDate: no open issues and fork is current with upstream.
 	UpToDate
 	// NeedsWork: one or more patch cycle phases have actionable work.
 	NeedsWork
@@ -26,14 +24,15 @@ func (s State) String() string {
 	}[s]
 }
 
-// Actionable reports whether the dispatcher should enqueue a cycle for this state.
+// Actionable reports whether the dispatcher should enqueue a cycle.
 func (s State) Actionable() bool { return s == NeedsWork }
 
-// RepoInfo is the raw data gathered from GitHub to determine a repo's state and priority.
+// RepoInfo is the raw data gathered from GitHub to determine state and priority.
 type RepoInfo struct {
 	HasPatcherMD   bool
+	Upstream       string    // "owner/repo" of the upstream (from PATCHER.md)
 	LastPatched    string    // tag value from PATCHER.md, e.g. "v1.4.0"
-	UpstreamLatest string    // latest release tag from the upstream repo
+	UpstreamLatest string    // latest release tag on the upstream repo
 	LastPatchTime  time.Time // when the last *-patch release was published; zero if never
 	HasLockIssue   bool
 	OpenIssues     []IssueLabels
@@ -67,8 +66,6 @@ func Determine(info RepoInfo) State {
 		if issue.Has("conflict") || issue.Has("human-review") {
 			hasBlocking = true
 		} else {
-			// Any open issue without a terminal label is actionable: it needs
-			// design (no "ready") or apply (has "ready").
 			hasActionable = true
 		}
 	}
@@ -79,17 +76,14 @@ func Determine(info RepoInfo) State {
 	if hasBlocking {
 		return Blocked
 	}
-
-	// No open issues. Check whether upstream has new releases.
 	if info.UpstreamLatest != "" && info.LastPatched != info.UpstreamLatest {
 		return NeedsWork
 	}
-
 	return UpToDate
 }
 
-// Priority returns a staleness score for scheduling. Higher = process sooner.
-// Repos never patched score highest. Otherwise: days since last patch release.
+// Priority returns a staleness score: higher means process sooner.
+// Repos never patched score highest; otherwise days since last patch release.
 func Priority(info RepoInfo) float64 {
 	if info.LastPatchTime.IsZero() {
 		return 1e9

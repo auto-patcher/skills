@@ -10,15 +10,13 @@ import (
 	gh "github.com/google/go-github/v66/github"
 	"golang.org/x/oauth2"
 
-	"github.com/auto-patcher/dispatcher/internal/config"
-	"github.com/auto-patcher/dispatcher/internal/state"
+	"github.com/auto-patcher/skills/dispatcher/internal/config"
+	"github.com/auto-patcher/skills/dispatcher/internal/state"
 )
 
 const lockIssueTitle = "[dispatcher] cycle in progress"
 
 // Client wraps the GitHub API for all dispatcher operations.
-// Note: designed for a single dispatcher instance — AcquireLock is not
-// atomic across multiple processes.
 type Client struct {
 	cfg *config.Config
 	gh  *gh.Client
@@ -39,8 +37,7 @@ type RankedRepo struct {
 	Priority float64
 }
 
-// RankedRepos returns all actionable repos in the org, sorted by priority
-// (most stale first). Repos with errors are logged and skipped.
+// RankedRepos returns all actionable repos sorted by priority (most stale first).
 func (c *Client) RankedRepos(ctx context.Context) ([]RankedRepo, error) {
 	repos, err := c.listRepos(ctx)
 	if err != nil {
@@ -76,7 +73,6 @@ func (c *Client) RepoInfo(ctx context.Context, repo string) (state.RepoInfo, err
 	owner, name, _ := strings.Cut(repo, "/")
 	info := state.RepoInfo{}
 
-	// Check for PATCHER.md and parse upstream + last_patched from it.
 	content, _, resp, err := c.gh.Repositories.GetContents(ctx, owner, name, "PATCHER.md", nil)
 	if err != nil {
 		if resp != nil && resp.StatusCode == 404 {
@@ -90,9 +86,9 @@ func (c *Client) RepoInfo(ctx context.Context, repo string) (state.RepoInfo, err
 		return info, fmt.Errorf("decode PATCHER.md: %w", err)
 	}
 	upstream, lastPatched := parsePatcherMD(body)
+	info.Upstream = upstream
 	info.LastPatched = lastPatched
 
-	// Fetch latest upstream release for staleness check.
 	if upstream != "" {
 		if upOwner, upName, ok := strings.Cut(upstream, "/"); ok {
 			if rel, _, err := c.gh.Repositories.GetLatestRelease(ctx, upOwner, upName); err == nil {
@@ -103,20 +99,16 @@ func (c *Client) RepoInfo(ctx context.Context, repo string) (state.RepoInfo, err
 		}
 	}
 
-	// Fetch last *-patch release on the fork for priority scoring.
-	releases, _, err := c.gh.Repositories.ListReleases(ctx, owner, name, &gh.ListOptions{PerPage: 10})
-	if err == nil {
-		for _, r := range releases {
-			if strings.HasSuffix(r.GetTagName(), "-patch") {
-				if pt := r.GetPublishedAt(); pt != nil {
-					info.LastPatchTime = pt.Time
-				}
-				break
+	releases, _, _ := c.gh.Repositories.ListReleases(ctx, owner, name, &gh.ListOptions{PerPage: 10})
+	for _, r := range releases {
+		if strings.HasSuffix(r.GetTagName(), "-patch") {
+			if pt := r.GetPublishedAt(); pt != nil {
+				info.LastPatchTime = pt.Time
 			}
+			break
 		}
 	}
 
-	// List open issues to determine actionability and lock status.
 	issues, _, err := c.gh.Issues.ListByRepo(ctx, owner, name, &gh.IssueListByRepoOptions{
 		State: "open", ListOptions: gh.ListOptions{PerPage: 100},
 	})
@@ -138,8 +130,7 @@ func (c *Client) RepoInfo(ctx context.Context, repo string) (state.RepoInfo, err
 	return info, nil
 }
 
-// AcquireLock creates the dispatcher lock issue on the repo.
-// Returns false without error if already locked (lock issue already exists).
+// AcquireLock creates the dispatcher lock issue.
 func (c *Client) AcquireLock(ctx context.Context, repo string) (bool, error) {
 	owner, name, _ := strings.Cut(repo, "/")
 	_, _, err := c.gh.Issues.Create(ctx, owner, name, &gh.IssueRequest{
@@ -152,8 +143,7 @@ func (c *Client) AcquireLock(ctx context.Context, repo string) (bool, error) {
 	return true, nil
 }
 
-// ReleaseLock closes the dispatcher lock issue. Errors are logged, not returned,
-// so a deferred ReleaseLock always runs to completion.
+// ReleaseLock closes the dispatcher lock issue.
 func (c *Client) ReleaseLock(ctx context.Context, repo string) {
 	owner, name, _ := strings.Cut(repo, "/")
 	issues, _, err := c.gh.Issues.ListByRepo(ctx, owner, name, &gh.IssueListByRepoOptions{
@@ -176,13 +166,13 @@ func (c *Client) ReleaseLock(ctx context.Context, repo string) {
 	}
 }
 
-// PostFailure opens a human-review issue on the repo describing the cycle failure.
+// PostFailure opens a human-review issue describing the cycle failure.
 func (c *Client) PostFailure(ctx context.Context, repo string, failure error) {
 	owner, name, _ := strings.Cut(repo, "/")
 	body := fmt.Sprintf(
-		"The dispatcher encountered an error running a patch cycle for this repository.\n\n"+
+		"The dispatcher encountered an error running a patch cycle.\n\n"+
 			"```\n%s\n```\n\n"+
-			"Investigate the error, then remove the `human-review` label to re-enable automated processing.",
+			"Investigate, then remove the `human-review` label to re-enable automated processing.",
 		failure,
 	)
 	_, _, err := c.gh.Issues.Create(ctx, owner, name, &gh.IssueRequest{
@@ -195,13 +185,11 @@ func (c *Client) PostFailure(ctx context.Context, repo string, failure error) {
 	}
 }
 
-// listRepos returns all non-excluded repo full names in the configured org.
 func (c *Client) listRepos(ctx context.Context) ([]string, error) {
 	excluded := make(map[string]bool, len(c.cfg.Exclude))
 	for _, e := range c.cfg.Exclude {
 		excluded[e] = true
 	}
-
 	var repos []string
 	opts := &gh.RepositoryListByOrgOptions{
 		Type:        "all",
@@ -225,7 +213,6 @@ func (c *Client) listRepos(ctx context.Context) ([]string, error) {
 	return repos, nil
 }
 
-// parsePatcherMD extracts upstream and last_patched from PATCHER.md content.
 func parsePatcherMD(content string) (upstream, lastPatched string) {
 	for _, line := range strings.Split(content, "\n") {
 		line = strings.TrimSpace(line)

@@ -1,13 +1,14 @@
-# Runner image for auto-patcher patch cycles.
-# Each container processes one repo and exits.
+# Deploys the autopatcher dispatcher binary.
+# The dispatcher clones repos and invokes claude directly as a subprocess,
+# so this image needs both the compiled binary and claude-code installed.
 #
-# TODO: once the auto-patcher claude-code fork has a release artifact,
-# replace the upstream install below with the fork's install method.
+# Build: docker build -t ghcr.io/auto-patcher/dispatcher:latest .
+# (Assumes the dispatcher binary has been compiled and copied to the build context.)
 
-FROM node:22-slim
+FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y \
-    curl git jq \
+    curl git ca-certificates nodejs npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Install GitHub CLI
@@ -20,13 +21,11 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     rm -rf /var/lib/apt/lists/*
 
 # Install claude-code.
-# TODO: swap for auto-patcher fork once published:
+# TODO: replace with auto-patcher fork once published:
 #   RUN npm install -g https://github.com/auto-patcher/claude-code
 RUN npm install -g @anthropic-ai/claude-code
 
-WORKDIR /workspace
+# Copy the compiled dispatcher binary.
+COPY dispatcher /usr/local/bin/dispatcher
 
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["dispatcher"]
