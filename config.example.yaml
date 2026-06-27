@@ -5,7 +5,7 @@ org: auto-patcher
 workers: 3
 
 # How often to re-scan the org for repos that need work.
-scan_interval: 15m
+scan_interval: 6h
 
 # Minimum pause between a worker finishing one job and starting the next.
 worker_delay: 10m

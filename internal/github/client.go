@@ -10,8 +10,8 @@ import (
 	gh "github.com/google/go-github/v66/github"
 	"golang.org/x/oauth2"
 
-	"github.com/auto-patcher/skills/dispatcher/internal/config"
-	"github.com/auto-patcher/skills/dispatcher/internal/state"
+	"github.com/auto-patcher/skills/internal/config"
+	"github.com/auto-patcher/skills/internal/state"
 )
 
 const lockIssueTitle = "[dispatcher] cycle in progress"

@@ -8,10 +8,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/auto-patcher/skills/dispatcher/internal/config"
-	"github.com/auto-patcher/skills/dispatcher/internal/github"
-	"github.com/auto-patcher/skills/dispatcher/internal/runner"
-	"github.com/auto-patcher/skills/dispatcher/internal/scheduler"
+	"github.com/auto-patcher/skills/internal/config"
+	"github.com/auto-patcher/skills/internal/github"
+	"github.com/auto-patcher/skills/internal/runner"
+	"github.com/auto-patcher/skills/internal/scheduler"
 )
 
 func main() {

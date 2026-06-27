@@ -18,7 +18,7 @@ import (
 	gogithub "github.com/google/go-github/v66/github"
 	"golang.org/x/oauth2"
 
-	"github.com/auto-patcher/skills/dispatcher/internal/config"
+	"github.com/auto-patcher/skills/internal/config"
 )
 
 // Job describes a single patch cycle run.

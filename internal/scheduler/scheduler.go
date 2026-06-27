@@ -6,11 +6,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/auto-patcher/skills/dispatcher/internal/config"
-	"github.com/auto-patcher/skills/dispatcher/internal/github"
-	"github.com/auto-patcher/skills/dispatcher/internal/prompts"
-	"github.com/auto-patcher/skills/dispatcher/internal/runner"
-	"github.com/auto-patcher/skills/dispatcher/internal/state"
+	"github.com/auto-patcher/skills/internal/config"
+	"github.com/auto-patcher/skills/internal/github"
+	"github.com/auto-patcher/skills/internal/prompts"
+	"github.com/auto-patcher/skills/internal/runner"
+	"github.com/auto-patcher/skills/internal/state"
 )
 
 // Scheduler drives the worker pool. A background loop scans the org on a

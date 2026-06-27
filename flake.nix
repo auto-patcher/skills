@@ -47,7 +47,7 @@
           pname = "dispatcher";
           version = "0.1.0";
           src = ./.;
-          subPackages = [ "dispatcher" ];
+          subPackages = [ "." ];
           # Placeholder: run `nix build .#dispatcher` after `go mod tidy` to get
           # the real hash from the error output, then replace this value.
           vendorHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
@@ -77,10 +77,7 @@
             age
             # container runtime
             podman
-            # github + git
-            gh
-            git
-            # go toolchain (for go mod tidy, local builds)
+            # go toolchain
             go
             gopls
           ];
