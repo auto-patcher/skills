@@ -14,8 +14,7 @@
     }:
     let
       # Package only the SKILL.md prompt files for installation.
-      # Excludes Go source files (embed.go) and anything else that
-      # may be added alongside the prompts.
+      # Excludes Go source files (embed.go) and anything else alongside the prompts.
       # Downstream flakes can symlink $out/share/claude/skills/* into
       # ~/.claude/skills/ to make skills available as slash commands.
       mkSkillsPackage =
@@ -37,20 +36,26 @@
           cp ${./CLAUDE.md} $out/share/auto-patcher/CLAUDE.md
           cp ${./PATCHER.md} $out/share/auto-patcher/PATCHER.md
         '';
+
+      # Build the dispatcher binary.
+      # The dispatcher embeds the skill prompts at compile time via //go:embed.
+      # Prerequisite: run `go mod tidy` at the repo root to generate go.sum,
+      # then update vendorHash with the hash from the first failed `nix build`.
+      mkDispatcherPackage =
+        pkgs:
+        pkgs.buildGoModule {
+          pname = "dispatcher";
+          version = "0.1.0";
+          src = ./.;
+          subPackages = [ "dispatcher" ];
+          # Placeholder: run `nix build .#dispatcher` after `go mod tidy` to get
+          # the real hash from the error output, then replace this value.
+          vendorHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+        };
     in
     {
       lib = {
-        # Wrap a free-code mkClaude call with the auto-patcher skill settings.
-        # Usage:
-        #   skills.lib.withSkills free-code.lib.mkClaude pkgs {
-        #     mcpServers = { ... };
-        #     settings   = { ... };
-        #   }
-        withSkills =
-          mkClaude: pkgs: args:
-          mkClaude pkgs args;
-
-        inherit mkSkillsPackage mkAgentPackage;
+        inherit mkSkillsPackage mkAgentPackage mkDispatcherPackage;
       };
     }
     // flake-utils.lib.eachDefaultSystem (
@@ -62,12 +67,14 @@
         packages = {
           default = mkSkillsPackage pkgs;
           agent = mkAgentPackage pkgs;
+          dispatcher = mkDispatcherPackage pkgs;
         };
 
         devShells.default = pkgs.mkShell {
           shellHook = ''
             echo "auto-patcher skills"
             echo "skills: /patch-dissect  /patch-design  /patch-apply"
+            echo "dispatcher: nix build .#dispatcher"
           '';
         };
 
