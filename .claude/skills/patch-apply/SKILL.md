@@ -51,12 +51,15 @@ After each issue is applied and closed, note it as complete before moving to the
 
 Once all issues are applied and closed:
 
-1. Run the **full test suite** one final time on the current branch
-2. If all tests pass:
-   - Create a tag: `v<upstream_version>-patch` (use the highest upstream version covered by this cycle)
-   - Update `PATCHER.md`: set `last_patched` to the new upstream version and append a row to the patch history table
-   - Open a pull request with a summary of all changes applied, grouped by feature
-3. If tests fail: do not tag. Investigate and fix, then retry step 3.
+1. Run the **full test suite** one final time on the patch branch.
+2. If tests fail: do not proceed. Investigate and fix, then retry from step 1.
+3. If tests pass, open a pull request against `main` with a summary of all changes applied, grouped by feature. Include links to all closed issues.
+4. Merge the pull request into `main`.
+5. Run the **integration test suite** against `main` after merge. Integration tests may differ from unit tests — run whatever the repo defines as its integration or end-to-end suite.
+6. If integration tests fail: do not release. Investigate on `main`, fix, and re-run integration tests before continuing.
+7. If integration tests pass:
+   - Update `PATCHER.md` on `main`: set `last_patched` to the new upstream version and append a row to the patch history table
+   - Create a **GitHub release** tagged `v<upstream_version>-patch` (use the highest upstream version covered by this cycle) targeting `main`. The release body should summarize the features backported in this cycle.
 
 ## Principles
 
