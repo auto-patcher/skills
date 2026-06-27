@@ -41,6 +41,22 @@ For each issue, think through how the upstream feature should be expressed in th
 ### 3. `/patch-apply`
 Apply each patch using a sub-agent per issue, with you as supervising agent. Review everything. Test everything. Do not merge work that doesn't fit.
 
+## Skills
+
+Skills in this repo live under `.claude/skills/<name>/SKILL.md`. Each skill directory may also contain supporting files (reference docs, examples, scripts). Skills are invoked as `/<name>` in Claude Code.
+
+```
+.claude/skills/
+├── patch-dissect/
+│   └── SKILL.md      # /patch-dissect
+├── patch-design/
+│   └── SKILL.md      # /patch-design
+└── patch-apply/
+    └── SKILL.md      # /patch-apply
+```
+
+To add a new skill: create `.claude/skills/<skill-name>/SKILL.md`. The directory name becomes the slash command. Supporting files (context docs, examples, scripts) can live alongside `SKILL.md` in the same directory and will be bundled with it.
+
 ## Principles
 
 - **Understand before acting.** Read the upstream change and the corresponding fork code before deciding anything.
