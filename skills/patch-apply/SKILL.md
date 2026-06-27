@@ -55,10 +55,11 @@ Once all `ready` issues are applied and closed:
 1. Run the **full test suite** on the patch branch — unit tests, build, all smoke tests from `PATCHER.md`'s Testing section, and any subagent testing it describes. Leave no angle untested.
 2. If anything fails: do not proceed. Investigate and fix, then retry from step 1.
 3. If all tests pass, open a pull request against `main` with a summary of all changes applied, grouped by type (`backport`, `feature`, `bug`). Include links to all closed issues.
-4. Merge the pull request into `main`.
+4. Merge the pull request into `main`. After merging, delete the patch branch.
 5. Run the **integration test suite** against `main` after merge.
 6. If integration tests fail: do not release. Investigate on `main`, fix, and re-run integration tests before continuing.
 7. If integration tests pass:
+   - Confirm all issues from this cycle are closed. If any remain open, close them with a comment referencing the merge commit.
    - If this cycle included any `backport` issues: update `last_patched` in `PATCHER.md` on `main` to the highest upstream version covered by this cycle
    - Create a **GitHub release** tagged `v<upstream_version>-patch` (for backport cycles) or `v<fork_version>` (for pure feature/bug cycles) targeting `main`. The release body should summarize all changes by type.
 
