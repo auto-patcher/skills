@@ -24,7 +24,7 @@ Spawn a sub-agent with the following context:
 
 - The full issue body (what is being implemented)
 - The design comment (how to implement it in fork style)
-- The relevant sections of `PATCHER.md` (custom features, architectural differences, style notes)
+- The relevant sections of `PATCHER.md` (character, architecture, style)
 - The instruction: **implement as described in the design comment, not as a copy of upstream code**. The sub-agent should write code as if it were a native member of this fork's codebase.
 
 Sub-agent task:
@@ -39,7 +39,7 @@ After the sub-agent reports back:
 
 - Read the diff. Ask: does this look like it belongs in this fork, or does it look like it was pasted from somewhere else?
 - Verify tests pass (all of them, not just the new ones)
-- Check that no custom features from `PATCHER.md` were accidentally modified or broken
+- Check that the fork's character and architecture from `PATCHER.md` are intact
 - If the work needs changes: either request a revision from the sub-agent (for significant issues) or apply the fixes directly (for small style corrections)
 - Once satisfied, close the issue with a comment summarizing what was done and linking the commit
 
@@ -58,7 +58,7 @@ Once all `ready` issues are applied and closed:
 5. Run the **integration test suite** against `main` after merge.
 6. If integration tests fail: do not release. Investigate on `main`, fix, and re-run integration tests before continuing.
 7. If integration tests pass:
-   - If this cycle included any `backport` issues: update `PATCHER.md` on `main` — set `last_patched` to the highest upstream version covered and append a row to the patch history table
+   - If this cycle included any `backport` issues: update `last_patched` in `PATCHER.md` on `main` to the highest upstream version covered by this cycle
    - Create a **GitHub release** tagged `v<upstream_version>-patch` (for backport cycles) or `v<fork_version>` (for pure feature/bug cycles) targeting `main`. The release body should summarize all changes by type.
 
 ## Principles
@@ -67,7 +67,7 @@ Once all `ready` issues are applied and closed:
 
 **Test before closing.** No issue closes without passing tests.
 
-**Conflicts block the cycle.** If a sub-agent surfaces a conflict with a fork custom feature, stop and surface it for human review.
+**Conflicts block the cycle.** If a sub-agent surfaces a conflict with the fork's character or architecture, stop and surface it for human review.
 
 **Context is your job.** Sub-agents see one issue at a time. You see the whole cycle. Notice cross-issue concerns, revisit earlier assumptions when needed, keep the sum of changes coherent.
 

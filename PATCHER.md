@@ -1,9 +1,10 @@
-# Patcher Configuration
+# Patcher
 
 <!--
-  This file is loaded by the autopatcher agent alongside CLAUDE.md.
-  Fill in all sections for this specific fork.
-  The autopatcher uses this as ground truth for what this fork is and what to preserve.
+  This file is the autopatcher's context for this fork — analogous to CLAUDE.md but
+  specific to the patching agent. Write it as a description of who this fork is, not
+  a log of what has happened to it. The agent reads this at the start of every session
+  to understand what it is working on and what must be preserved.
 -->
 
 ## Repositories
@@ -13,39 +14,33 @@ upstream:
 fork:     
 ```
 
-## Patch State
+## Upstream baseline
 
 ```
 last_patched: 
 ```
 
-<!-- The upstream version tag that was last fully patched into this fork (e.g. v1.2.3). -->
-<!-- The next patch cycle will analyze everything released after this version. -->
+The upstream version tag last incorporated into this fork. The next `/patch-dissect` run will analyze everything released after this.
 
-## Fork Identity
+## Purpose
 
-### Purpose
-<!-- Why does this fork exist? What problem does it solve that upstream doesn't? -->
+<!-- Why does this fork exist? What does it do that upstream doesn't, or differently?
+     Write this as a short statement of intent — what problem this fork solves and for whom. -->
 
-### Custom Features
-<!-- List the features this fork adds that are not in upstream. -->
-<!-- The autopatcher must preserve these when integrating upstream changes. -->
+## Character
 
-- 
+<!-- Describe how this fork thinks and works. What are its values? What trade-offs does it
+     make differently from upstream? What would a developer native to this codebase care about?
+     This is what the agent uses to judge whether a patch "fits". -->
 
-### Architectural Differences
-<!-- Describe any structural or design differences from upstream. -->
-<!-- e.g. different module layout, different abstraction layers, replaced dependencies -->
+## Architecture
 
-- 
+<!-- Where does this fork diverge structurally from upstream? Different module layout,
+     replaced dependencies, new layers or abstractions, removed subsystems?
+     Be concrete — name the packages, files, or patterns that differ. -->
 
-### Style Notes
-<!-- Conventions, naming patterns, or idioms that are specific to this fork. -->
-<!-- The autopatcher uses these to decide how to express upstream features in fork style. -->
+## Style
 
-- 
-
-## Patch History
-
-| Upstream Version | Patch Date | Issues | Notes |
-|-----------------|-----------|--------|-------|
+<!-- Naming conventions, idioms, patterns, and preferences specific to this fork.
+     The agent uses this when deciding how to express an upstream feature in fork terms
+     rather than copying the upstream implementation. -->

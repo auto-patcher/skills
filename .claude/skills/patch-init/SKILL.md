@@ -38,10 +38,10 @@ Fetch from `auto-patcher/skills` and copy verbatim. This is the shared agent def
 
 ### `PATCHER.md`
 
-Create a filled-out instance (not the template):
+Create a filled-out instance with the repositories and baseline populated, and the identity sections left as prompts for the user:
 
 ```markdown
-# Patcher Configuration
+# Patcher
 
 ## Repositories
 
@@ -50,33 +50,31 @@ upstream: <upstream>
 fork:     auto-patcher/<repo_name>
 \`\`\`
 
-## Patch State
+## Upstream baseline
 
 \`\`\`
 last_patched: <latest_upstream_release_tag>
 \`\`\`
 
-## Fork Identity
+The upstream version tag last incorporated into this fork. The next `/patch-dissect` run will analyze everything released after this.
 
-### Purpose
-<!-- Why does this fork exist? What problem does it solve that upstream doesn't? -->
+## Purpose
 
-### Custom Features
+<!-- Why does this fork exist? What does it do that upstream doesn't, or differently? -->
 
--
+## Character
 
-### Architectural Differences
+<!-- How does this fork think and work? What trade-offs does it make differently from upstream?
+     What would a developer native to this codebase care about? -->
 
--
+## Architecture
 
-### Style Notes
+<!-- Where does this fork diverge structurally? Different modules, replaced dependencies,
+     new abstractions, removed subsystems? Be concrete — name the packages or files that differ. -->
 
--
+## Style
 
-## Patch History
-
-| Upstream Version | Patch Date | Issues | Notes |
-|-----------------|-----------|--------|-------|
+<!-- Naming conventions, idioms, and patterns specific to this fork. -->
 ```
 
 ### `.claude/skills/`
@@ -140,4 +138,4 @@ Summarize what was done:
 - Initial `last_patched`: `<tag>`
 - Files added: `CLAUDE.md`, `PATCHER.md`, `.claude/skills/`, `flake.nix` (created or updated)
 
-Remind the user to fill in the **Fork Identity** section of `PATCHER.md` before running `/patch-dissect`.
+Remind the user to fill in the **Purpose**, **Character**, **Architecture**, and **Style** sections of `PATCHER.md` before running `/patch-dissect`. The agent cannot make good judgements about what to preserve or how to express changes without this context.
