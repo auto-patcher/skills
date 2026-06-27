@@ -13,14 +13,20 @@
       flake-utils,
     }:
     let
-      # Package the skill command files for installation.
-      # Downstream flakes (e.g. a dotfiles flake using free-code.lib.mkClaude) can
-      # add this package and symlink $out/share/claude/skills/* into ~/.claude/skills/.
+      # Package only the SKILL.md prompt files for installation.
+      # Excludes Go source files (embed.go) and anything else that
+      # may be added alongside the prompts.
+      # Downstream flakes can symlink $out/share/claude/skills/* into
+      # ~/.claude/skills/ to make skills available as slash commands.
       mkSkillsPackage =
         pkgs:
-        pkgs.runCommand "auto-patcher-skills" { src = ./skills; } ''
+        pkgs.runCommand "auto-patcher-skills" { } ''
           mkdir -p $out/share/claude/skills
-          cp -r $src/. $out/share/claude/skills/
+          for skill in ${./skills}/*/SKILL.md; do
+            name=$(basename $(dirname $skill))
+            mkdir -p $out/share/claude/skills/$name
+            cp $skill $out/share/claude/skills/$name/SKILL.md
+          done
         '';
 
       # Package the autopatcher agent files (CLAUDE.md + PATCHER.md template).
