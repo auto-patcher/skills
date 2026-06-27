@@ -30,7 +30,10 @@ If a patch cycle covers multiple upstream versions (e.g. v1.3.0 → v1.5.2), tag
 
 ## Workflow
 
-A full patch cycle runs in three phases. Use the skills in order:
+To set up a new fork, run `/patch-init` first. For an already-initialized fork, a full patch cycle runs in three phases:
+
+### 0. `/patch-init <owner/repo>`
+Fork an upstream to the auto-patcher org, clone it locally, scaffold `CLAUDE.md`, `PATCHER.md`, skills, and nix integration. Run once per fork.
 
 ### 1. `/patch-dissect`
 Analyze upstream changes since the last patch, understand them semantically, and produce GitHub issues representing discrete units of backport work.
@@ -39,7 +42,7 @@ Analyze upstream changes since the last patch, understand them semantically, and
 For each issue, think through how the upstream feature should be expressed in this fork's style. Write a design comment before any code is written.
 
 ### 3. `/patch-apply`
-Apply each patch using a sub-agent per issue, with you as supervising agent. Review everything. Test everything. Do not merge work that doesn't fit.
+Apply each patch using a sub-agent per issue, with you as supervising agent. Review, test, merge to main, run integration tests, and cut a GitHub release.
 
 ## GitHub operations
 
@@ -51,6 +54,8 @@ Skills in this repo live under `.claude/skills/<name>/SKILL.md`. Each skill dire
 
 ```
 .claude/skills/
+├── patch-init/
+│   └── SKILL.md      # /patch-init <owner/repo>
 ├── patch-dissect/
 │   └── SKILL.md      # /patch-dissect
 ├── patch-design/
