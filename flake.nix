@@ -82,10 +82,10 @@
             gopls
           ];
           shellHook = ''
-            mkdir -p .claude/skills
             for skill in skills/*/SKILL.md; do
               name=$(basename $(dirname $skill))
-              ln -sfn "$(pwd)/$skill" ".claude/skills/$name.md"
+              mkdir -p ".claude/skills/$name"
+              ln -sfn "$(pwd)/$skill" ".claude/skills/$name/SKILL.md"
             done
             echo "auto-patcher dev shell"
             echo "skills:     /patch-init"
