@@ -5,21 +5,17 @@ org: auto-patcher
 workers: 3
 
 # How often to re-scan the org for repos that need work.
-# Repos are ranked by staleness and enqueued oldest-first each scan.
 scan_interval: 15m
 
 # Minimum pause between a worker finishing one job and starting the next.
-# Spreads load over time rather than hammering repos back-to-back.
 worker_delay: 10m
 
-# Repos in the org to skip (e.g. meta-repos with no upstream).
+# Repos in the org to skip.
 exclude:
   - skills
 
 github:
-  # Env var holding the GitHub PAT (repo + org read/write).
-  # Decrypted by SOPS/Nix before the dispatcher starts.
-  token_env: GITHUB_TOKEN
+  token: ""
 
 anthropic:
-  api_key_env: ANTHROPIC_API_KEY
+  token: ""

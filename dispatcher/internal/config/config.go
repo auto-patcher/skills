@@ -18,30 +18,13 @@ type Config struct {
 	WorkerDelay  time.Duration `yaml:"worker_delay"`
 	Exclude      []string      `yaml:"exclude"`
 
-	Runner RunnerConfig `yaml:"runner"`
-
 	GitHub struct {
-		TokenEnv string `yaml:"token_env"`
+		Token string `yaml:"token"`
 	} `yaml:"github"`
 
 	Anthropic struct {
-		APIKeyEnv string `yaml:"api_key_env"`
+		Token string `yaml:"token"`
 	} `yaml:"anthropic"`
-}
-
-type RunnerConfig struct {
-	Type   string       `yaml:"type"` // "docker" or "nomad"
-	Docker DockerConfig `yaml:"docker"`
-	Nomad  NomadConfig  `yaml:"nomad"`
-}
-
-type DockerConfig struct {
-	Image string `yaml:"image"`
-}
-
-type NomadConfig struct {
-	Address string `yaml:"address"`
-	JobName string `yaml:"job_name"`
 }
 
 func Load(path string) (*Config, error) {
@@ -73,5 +56,5 @@ func readConfig(path string) ([]byte, error) {
 	return os.ReadFile(path)
 }
 
-func (c *Config) GitHubToken() string  { return os.Getenv(c.GitHub.TokenEnv) }
-func (c *Config) AnthropicKey() string { return os.Getenv(c.Anthropic.APIKeyEnv) }
+func (c *Config) GitHubToken() string  { return c.GitHub.Token }
+func (c *Config) AnthropicKey() string { return c.Anthropic.Token }
