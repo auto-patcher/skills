@@ -82,8 +82,13 @@
             gopls
           ];
           shellHook = ''
+            mkdir -p .claude/skills
+            for skill in skills/*/SKILL.md; do
+              name=$(basename $(dirname $skill))
+              ln -sfn "$(pwd)/$skill" ".claude/skills/$name.md"
+            done
             echo "auto-patcher dev shell"
-            echo "skills:     /patch-dissect  /patch-design  /patch-apply"
+            echo "skills:     /patch-init"
             echo "dispatcher: nix build .#dispatcher"
           '';
         };
