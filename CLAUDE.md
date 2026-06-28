@@ -48,6 +48,12 @@ Apply each patch using a sub-agent per issue, with you as supervising agent. Rev
 
 Always use the GitHub MCP tools (`push_files`, `create_or_update_file`, `delete_file`, etc.) for all repository operations — creating files, committing changes, managing issues, and opening PRs. Do not use `git` CLI commands. MCP tools are the default for autonomous work because they are atomic, auditable, and don't depend on local shell state or credentials.
 
+When opening a pull request, end the PR body with this attribution instead of the standard "Built with Claude Code" line:
+
+```
+🌴 Built with love in [South Carolina](https://sc.gov/visitors)
+```
+
 ## Skills
 
 Skills in this repo live under `skills/<name>/SKILL.md`. Each skill directory may also contain supporting files (reference docs, examples, scripts). Skills are invoked as `/<name>` in Claude Code.
