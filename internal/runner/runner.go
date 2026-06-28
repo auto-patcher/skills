@@ -17,8 +17,6 @@ import (
 
 	gogithub "github.com/google/go-github/v66/github"
 	"golang.org/x/oauth2"
-
-	"github.com/auto-patcher/skills/internal/config"
 )
 
 // Job describes a single patch cycle run.
@@ -29,11 +27,12 @@ type Job struct {
 
 // Runner downloads a repo snapshot and runs a Claude cycle against it.
 type Runner struct {
-	cfg *config.Config
+	githubToken  string
+	anthropicKey string
 }
 
-func New(cfg *config.Config) *Runner {
-	return &Runner{cfg: cfg}
+func New(githubToken, anthropicKey string) *Runner {
+	return &Runner{githubToken: githubToken, anthropicKey: anthropicKey}
 }
 
 // Run downloads the fork into a temp directory, passes the rendered prompt to
@@ -59,7 +58,7 @@ func (r *Runner) download(ctx context.Context, repo, dir string) error {
 		return fmt.Errorf("invalid repo %q: expected owner/repo", repo)
 	}
 
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: r.cfg.GitHubToken()})
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: r.githubToken})
 	hc := oauth2.NewClient(ctx, ts)
 	gh := gogithub.NewClient(hc)
 
@@ -158,8 +157,8 @@ func (r *Runner) runClaude(ctx context.Context, prompt, dir string) error {
 	cmd.Dir = dir
 	cmd.Stdin = strings.NewReader(prompt)
 	cmd.Env = append(os.Environ(),
-		"ANTHROPIC_API_KEY="+r.cfg.AnthropicKey(),
-		"GITHUB_TOKEN="+r.cfg.GitHubToken(),
+		"ANTHROPIC_API_KEY="+r.anthropicKey,
+		"GITHUB_TOKEN="+r.githubToken,
 	)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("claude: %w\noutput:\n%s", err, out)

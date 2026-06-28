@@ -10,36 +10,38 @@ import (
 	gh "github.com/google/go-github/v66/github"
 	"golang.org/x/oauth2"
 
-	"github.com/auto-patcher/skills/internal/config"
 	"github.com/auto-patcher/skills/internal/state"
 )
 
 const lockIssueTitle = "[dispatcher] cycle in progress"
 
-// Client wraps the GitHub API for all dispatcher operations.
+// Client wraps the GitHub API for all autopatcher operations.
 type Client struct {
-	cfg *config.Config
-	gh  *gh.Client
+	gh *gh.Client
 }
 
-func NewClient(cfg *config.Config) *Client {
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: cfg.GitHubToken()})
+// NewClient builds a client authenticated with the given token.
+func NewClient(token string) *Client {
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
 	return &Client{
-		cfg: cfg,
-		gh:  gh.NewClient(oauth2.NewClient(context.Background(), ts)),
+		gh: gh.NewClient(oauth2.NewClient(context.Background(), ts)),
 	}
 }
 
-// RankedRepo pairs a repo name with its computed state and priority.
+// RankedRepo pairs a repo name with its computed state, priority, and the
+// upstream coordinates needed to patch it.
 type RankedRepo struct {
-	Repo     string
-	State    state.State
-	Priority float64
+	Repo        string
+	State       state.State
+	Priority    float64
+	Upstream    string
+	LastPatched string
 }
 
-// RankedRepos returns all actionable repos sorted by priority (most stale first).
-func (c *Client) RankedRepos(ctx context.Context) ([]RankedRepo, error) {
-	repos, err := c.listRepos(ctx)
+// RankedRepos returns all actionable repos in org sorted by priority (most
+// stale first). Repos whose name is in exclude are skipped.
+func (c *Client) RankedRepos(ctx context.Context, org string, exclude []string) ([]RankedRepo, error) {
+	repos, err := c.listRepos(ctx, org, exclude)
 	if err != nil {
 		return nil, err
 	}
@@ -55,9 +57,11 @@ func (c *Client) RankedRepos(ctx context.Context) ([]RankedRepo, error) {
 		slog.Info("repo state", "repo", repo, "state", st)
 		if st.Actionable() {
 			ranked = append(ranked, RankedRepo{
-				Repo:     repo,
-				State:    st,
-				Priority: state.Priority(info),
+				Repo:        repo,
+				State:       st,
+				Priority:    state.Priority(info),
+				Upstream:    info.Upstream,
+				LastPatched: info.LastPatched,
 			})
 		}
 	}
@@ -183,9 +187,9 @@ func (c *Client) PostFailure(ctx context.Context, repo string, failure error) {
 	}
 }
 
-func (c *Client) listRepos(ctx context.Context) ([]string, error) {
-	excluded := make(map[string]bool, len(c.cfg.Exclude))
-	for _, e := range c.cfg.Exclude {
+func (c *Client) listRepos(ctx context.Context, org string, exclude []string) ([]string, error) {
+	excluded := make(map[string]bool, len(exclude))
+	for _, e := range exclude {
 		excluded[e] = true
 	}
 	var repos []string
@@ -194,13 +198,13 @@ func (c *Client) listRepos(ctx context.Context) ([]string, error) {
 		ListOptions: gh.ListOptions{PerPage: 100},
 	}
 	for {
-		page, resp, err := c.gh.Repositories.ListByOrg(ctx, c.cfg.Org, opts)
+		page, resp, err := c.gh.Repositories.ListByOrg(ctx, org, opts)
 		if err != nil {
 			return nil, fmt.Errorf("list repos: %w", err)
 		}
 		for _, r := range page {
 			if !excluded[r.GetName()] {
-				repos = append(repos, c.cfg.Org+"/"+r.GetName())
+				repos = append(repos, org+"/"+r.GetName())
 			}
 		}
 		if resp.NextPage == 0 {

@@ -1,14 +1,17 @@
 name: auto-patch
 
-# Periodicity now lives here instead of in a long-running server: the binary
-# does a single scan-and-drain pass per invocation, and this schedule decides
-# how often that happens. Adjust the cron as needed.
+# Periodicity lives here: each run scans the org once and patches every
+# actionable repo. Adjust the cron as needed.
 on:
   schedule:
     - cron: "0 */6 * * *" # every 6 hours
-  workflow_dispatch: {} # allow manual runs from the Actions tab
+  workflow_dispatch:
+    inputs:
+      jobs:
+        description: "Max concurrent repos (parallel -j)"
+        default: "3"
 
-# Prevent overlapping runs — a scan-and-drain pass can outlast the 6h interval.
+# One pass at a time — a pass can outlast the interval.
 concurrency:
   group: auto-patch
   cancel-in-progress: false
@@ -19,15 +22,15 @@ permissions:
 jobs:
   patch:
     runs-on: ubuntu-latest
-    # A patch cycle runs full Claude sessions; give the job plenty of room.
     timeout-minutes: 350
     env:
-      # Secrets, formerly in the sops-encrypted config, now come from GitHub
-      # secrets. GITHUB_TOKEN must have org-wide repo + issues access (a PAT or
-      # GitHub App token), so we use a custom secret rather than the default
-      # workflow token, which is scoped to this repo only.
+      # Secrets come from GitHub secrets, injected by the workflow. GITHUB_TOKEN
+      # needs org-wide repo + issues access (a PAT or App token), so we use a
+      # custom secret rather than the default workflow token (this-repo only).
       GITHUB_TOKEN: ${{ secrets.AUTOPATCHER_GITHUB_TOKEN }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      AUTOPATCHER_ORG: auto-patcher
+      JOBS: ${{ github.event.inputs.jobs || '3' }}
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -38,6 +41,9 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Install GNU parallel
+        run: sudo apt-get update && sudo apt-get install -y parallel
+
       - name: Install claude-code
         # TODO: replace with the auto-patcher fork once published:
         #   npm install -g https://github.com/auto-patcher/claude-code
@@ -46,5 +52,19 @@ jobs:
       - name: Build
         run: go build -o auto-patcher .
 
-      - name: Run patch cycle
-        run: ./auto-patcher -config config.yaml
+      # The "plan" job: scan the org for actionable repos. Self-contained code
+      # in the same binary, just a different subcommand.
+      - name: Scan org
+        run: ./auto-patcher scan --org "$AUTOPATCHER_ORG" --exclude skills | tee repos.txt
+
+      # The worker pool: one `patch` invocation per repo, up to $JOBS at a time.
+      # --upstream/--last-patched are omitted, so each invocation computes them
+      # from the repo's PATCHER.md. --halt now,fail=0 keeps one repo's failure
+      # from cancelling the rest (failures are reported on the repo as issues).
+      - name: Patch repos
+        run: |
+          if [ ! -s repos.txt ]; then
+            echo "no actionable repos"; exit 0
+          fi
+          parallel --will-cite --halt now,fail=0 -j "$JOBS" \
+            ./auto-patcher patch --repo {} < repos.txt
