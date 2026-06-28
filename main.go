@@ -64,9 +64,20 @@ usage:
   auto-patcher patch --repo <owner/repo> [--upstream <owner/repo>] [--last-patched <tag>]
 
 secrets are read from the environment:
-  GITHUB_TOKEN       (scan, patch)
-  ANTHROPIC_API_KEY  (patch)
+  GITHUB_TOKEN                                          (scan, patch)
+  ANTHROPIC_API_KEY | OPENAI_API_KEY | OPENROUTER_API_KEY  (patch; at least one)
 `)
+}
+
+// hasLLMKey reports whether any supported LLM provider key is set. The agent
+// CLI is claude-compatible and uses whichever provider is configured.
+func hasLLMKey() bool {
+	for _, k := range []string{"ANTHROPIC_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY"} {
+		if os.Getenv(k) != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // signalContext returns a context cancelled on SIGINT/SIGTERM so an in-flight

@@ -16,55 +16,95 @@ concurrency:
   group: auto-patch
   cancel-in-progress: false
 
+# The built-in GITHUB_TOKEN is used only to clone this repo and to let Nix fetch
+# the free-code flake input without hitting API rate limits — read is enough.
 permissions:
   contents: read
 
 jobs:
   patch:
     runs-on: ubuntu-latest
+
+    # Lix (a community implementation of Nix) supplies the package manager; the
+    # entire toolchain — Go, GNU parallel, git, and the free-code agent — comes
+    # from this repo's flake (see devShells.default). That is why there are no
+    # setup-go / apt-get / npm steps: all setup is described in Nix.
+    #
+    # The image is intentionally minimal and ships no Node.js, so JS-based
+    # actions (actions/checkout, setup-*) cannot run inside it. We clone by hand
+    # in the first step instead.
+    container:
+      image: ghcr.io/lix-project/lix:latest
+
     timeout-minutes: 350
+
     env:
-      # Secrets come from GitHub secrets, injected by the workflow. GITHUB_TOKEN
-      # needs org-wide repo + issues access (a PAT or App token), so we use a
-      # custom secret rather than the default workflow token (this-repo only).
-      GITHUB_TOKEN: ${{ secrets.AUTOPATCHER_GITHUB_TOKEN }}
+      # ── Secrets ──────────────────────────────────────────────────────────
+      #
+      # AUTOPATCHER_GITHUB_TOKEN  (required)
+      #   The token used for EVERY fork operation: enumerating the org, reading
+      #   PATCHER.md / releases / issues, downloading source tarballs, opening
+      #   the lock + failure issues, and — through the free-code agent — pushing
+      #   branches, opening backport PRs, and cutting releases. It must be
+      #   granted access to ALL repositories in the org.
+      #     Fine-grained PAT / GitHub App repository permissions:
+      #       Contents:      Read and write  (clone, push commits, tags/releases)
+      #       Issues:        Read and write  (lock issue, failure reports, tracking)
+      #       Pull requests: Read and write  (open backport PRs)
+      #       Metadata:      Read            (mandatory, implicit)
+      #       Workflows:     Read and write  (only if a patch edits .github/workflows/*)
+      #     Classic PAT equivalent: `repo` + `workflow` (+ `read:org` to list
+      #     private org repos).
+      #   The built-in GITHUB_TOKEN cannot stand in for this: it is scoped to
+      #   THIS repo only and cannot reach the other repos in the org.
+      #
+      # ANTHROPIC_API_KEY / OPENAI_API_KEY / OPENROUTER_API_KEY  (at least one)
+      #   LLM provider key for the free-code agent. free-code is Claude-
+      #   compatible and uses whichever key is present, so one suffices; set
+      #   several only if you want a fallback. These are model-provider
+      #   credentials and grant no GitHub access.
+      #
+      # GITHUB_TOKEN  (built-in, no setup needed)
+      #   Consumed by Nix via NIX_CONFIG access-tokens to fetch the free-code
+      #   flake input within github.com's authenticated rate limits, and to
+      #   clone this repo below. Read-only.
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       AUTOPATCHER_ORG: auto-patcher
       JOBS: ${{ github.event.inputs.jobs || '3' }}
+      NIX_CONFIG: |
+        extra-experimental-features = nix-command flakes
+        access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - name: Check out
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Install GNU parallel
-        run: sudo apt-get update && sudo apt-get install -y parallel
-
-      - name: Install claude-code
-        # TODO: replace with the auto-patcher fork once published:
-        #   npm install -g https://github.com/auto-patcher/claude-code
-        run: npm install -g @anthropic-ai/claude-code
-
-      - name: Build
-        run: go build -o auto-patcher .
-
-      # The "plan" job: scan the org for actionable repos. Self-contained code
-      # in the same binary, just a different subcommand.
-      - name: Scan org
-        run: ./auto-patcher scan --org "$AUTOPATCHER_ORG" --exclude skills | tee repos.txt
-
-      # The worker pool: one `patch` invocation per repo, up to $JOBS at a time.
-      # --upstream/--last-patched are omitted, so each invocation computes them
-      # from the repo's PATCHER.md. --halt now,fail=0 keeps one repo's failure
-      # from cancelling the rest (failures are reported on the repo as issues).
-      - name: Patch repos
+      - name: Clone repo
+        # actions/checkout needs Node, which the Lix image lacks, so clone with
+        # the built-in token (this repo is in scope for it).
+        env:
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ ! -s repos.txt ]; then
-            echo "no actionable repos"; exit 0
-          fi
-          parallel --will-cite --halt now,fail=0 -j "$JOBS" \
-            ./auto-patcher patch --repo {} < repos.txt
+          git config --global --add safe.directory '*'
+          git clone --depth 1 --branch "${GITHUB_REF_NAME}" \
+            "https://x-access-token:${GIT_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" .
+
+      - name: Run patch cycle
+        # GITHUB_TOKEN here is the ORG-scoped token the binary and free-code use
+        # for all fork operations — distinct from the built-in token Nix used to
+        # fetch inputs above. `nix develop` provides Go, GNU parallel, and the
+        # free-code CLI; the binary's `scan` is piped into `parallel`, which
+        # fans out one `patch` per repo. --halt now,fail=0 keeps one repo's
+        # failure from cancelling the rest (failures are reported as issues).
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUTOPATCHER_GITHUB_TOKEN }}
+        run: |
+          nix develop --command bash -euo pipefail -c '
+            go build -o auto-patcher .
+            ./auto-patcher scan --org "$AUTOPATCHER_ORG" --exclude skills | tee repos.txt
+            if [ -s repos.txt ]; then
+              parallel --will-cite --halt now,fail=0 -j "$JOBS" \
+                ./auto-patcher patch --repo {} < repos.txt
+            else
+              echo "no actionable repos"
+            fi
+          '

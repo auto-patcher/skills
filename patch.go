@@ -32,16 +32,15 @@ func runPatch(args []string) error {
 	if err != nil {
 		return err
 	}
-	anthropicKey, err := requireEnv("ANTHROPIC_API_KEY")
-	if err != nil {
-		return err
+	if !hasLLMKey() {
+		return fmt.Errorf("set one of ANTHROPIC_API_KEY, OPENAI_API_KEY, or OPENROUTER_API_KEY")
 	}
 
 	ctx, cancel := signalContext()
 	defer cancel()
 
 	client := github.NewClient(githubToken)
-	r := runner.New(githubToken, anthropicKey)
+	r := runner.New(githubToken)
 
 	// Re-read repo info at run time — state may have changed since the scan.
 	info, err := client.RepoInfo(ctx, *repo)

@@ -25,14 +25,21 @@ type Job struct {
 	Prompt string // fully rendered prompt, passed to claude via stdin
 }
 
-// Runner downloads a repo snapshot and runs a Claude cycle against it.
+// Runner downloads a repo snapshot and runs a coding-agent cycle against it.
 type Runner struct {
-	githubToken  string
-	anthropicKey string
+	githubToken string
+	cli         string // claude-compatible CLI to invoke
 }
 
-func New(githubToken, anthropicKey string) *Runner {
-	return &Runner{githubToken: githubToken, anthropicKey: anthropicKey}
+// New builds a Runner. The agent CLI defaults to "claude" and can be overridden
+// with AUTOPATCHER_CLI — e.g. when the binary built from gastrodon/free-code is
+// installed under a different name.
+func New(githubToken string) *Runner {
+	cli := os.Getenv("AUTOPATCHER_CLI")
+	if cli == "" {
+		cli = "claude"
+	}
+	return &Runner{githubToken: githubToken, cli: cli}
 }
 
 // Run downloads the fork into a temp directory, passes the rendered prompt to
@@ -47,7 +54,7 @@ func (r *Runner) Run(ctx context.Context, job Job) error {
 	if err := r.download(ctx, job.Repo, workDir); err != nil {
 		return err
 	}
-	return r.runClaude(ctx, job.Prompt, workDir)
+	return r.runAgent(ctx, job.Prompt, workDir)
 }
 
 // download fetches the default-branch tarball via the GitHub API and extracts
@@ -150,18 +157,18 @@ func extractTarGz(r io.Reader, dir string) error {
 	return nil
 }
 
-func (r *Runner) runClaude(ctx context.Context, prompt, dir string) error {
-	// TODO: update flag/invocation once the auto-patcher CC fork's
-	// non-interactive API is finalised.
-	cmd := exec.CommandContext(ctx, "claude", "--print")
+func (r *Runner) runAgent(ctx context.Context, prompt, dir string) error {
+	// TODO: update flag/invocation once the free-code CLI's non-interactive
+	// API is finalised.
+	cmd := exec.CommandContext(ctx, r.cli, "--print")
 	cmd.Dir = dir
 	cmd.Stdin = strings.NewReader(prompt)
-	cmd.Env = append(os.Environ(),
-		"ANTHROPIC_API_KEY="+r.anthropicKey,
-		"GITHUB_TOKEN="+r.githubToken,
-	)
+	// Inherit the environment so the agent picks up whichever LLM provider key
+	// the caller set (ANTHROPIC_API_KEY, OPENAI_API_KEY, or OPENROUTER_API_KEY),
+	// and pin GITHUB_TOKEN to the org-scoped token used for fork operations.
+	cmd.Env = append(os.Environ(), "GITHUB_TOKEN="+r.githubToken)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("claude: %w\noutput:\n%s", err, out)
+		return fmt.Errorf("%s: %w\noutput:\n%s", r.cli, err, out)
 	}
 	return nil
 }
